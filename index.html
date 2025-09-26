@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat App - Multi Chat</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+
+        ::-webkit-scrollbar{
+            width: 5px;
+            background: transparent;
+
+        }
+
+        ::-webkit-scrollbar-thumb{
+            width: 5px;
+            background: gray;
+        }
+        :root {
+            --bg-color: #0f0f0f;
+            --sidebar-bg: #1a1a1a;
+            --user-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bot-bg: #2d2d2d;
+            --text-color: #f8f9fa;
+            --user-text: #fff;
+            --bot-text: #e0e0e0;
+            --btn-primary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --btn-primary-hover: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+            --radius-md: 12px;
+            --border-color: #333;
+        }
+
+        .code-box {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 8px 0;
+            position: relative;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            padding: 2px 6px;
+            font-size: 12px;
+            cursor: pointer;
+            height: 20px;
+            border: none;
+            background: #3a3a3a;
+            color: #fff;
+            border-radius: 3px;
+        }
+
+        .copy-btn:hover {
+            background: #555;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Inter", sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #2a2a2a;
+            transition: width 0.3s;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .toggle-sidebar {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .new-chat-btn {
+            margin: 12px;
+            cursor: pointer;
+            padding: 10px;
+            border: none;
+            border-radius: var(--radius-md);
+            background: var(--btn-primary);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 12px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .chat-item {
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            background: #262626;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-item.active {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: #1f1f1f;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: linear-gradient(to bottom, #0f0f0f 0%, #1a1a1a 100%);
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            max-width: 75%;
+            position: relative;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--user-bg);
+            color: var(--user-text);
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background: var(--bot-bg);
+            color: var(--bot-text);
+        }
+
+        .copy-btn {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            font-size: 11px;
+            padding: 3px 6px;
+            cursor: pointer;
+            border: none;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border-radius: 6px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .message:hover .copy-btn {
+            opacity: 1;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .input-area textarea {
+            flex: 1;
+            padding: 10px;
+            border-radius: var(--radius-md);
+            border: 1px solid #333;
+            background: #262626;
+            color: var(--text-color);
+            resize: none;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .send-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--radius-md);
+            background: var(--btn-primary);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>Chats</h2>
+            <button class="toggle-sidebar" id="toggleSidebar">☰</button>
+        </div>
+        <button class="new-chat-btn" id="newChatBtn">New Chat</button>
+        <div class="chat-list" id="chatList"></div>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <span id="chatTitle">Select a chat</span>
+            <button id="exportChatBtn" style="
+        margin-left:auto;
+        padding:6px;
+        border-radius:6px;
+        border:none;
+        background:#3a3a3a;
+        color:#fff;
+        cursor:pointer;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+    " title="Export Chat">
+                📤
+            </button>
+        </div>
+
+        <div class="messages" id="messages"></div>
+        <div class="input-area">
+            <textarea id="userMessage" placeholder="Type your message..." rows="1"></textarea>
+            <button class="send-btn" id="sendBtn" disabled>Send</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://apiaichatbot.vercel.app/api/chat"; // Your backend
+        const messagesDiv = document.getElementById("messages");
+        const userMessage = document.getElementById("userMessage");
+        const sendBtn = document.getElementById("sendBtn");
+        const newChatBtn = document.getElementById("newChatBtn");
+        const chatListDiv = document.getElementById("chatList");
+        const chatTitle = document.getElementById("chatTitle");
+        const sidebar = document.getElementById("sidebar");
+        const exportChatBtn = document.getElementById("exportChatBtn");
+
+        // ---------------- State ----------------
+        let chats = JSON.parse(localStorage.getItem("multiChats")) || [];
+        let currentChatId = null; // Start with no chat selected
+
+        // ---------------- Helpers ----------------
+        function saveChats() { localStorage.setItem("multiChats", JSON.stringify(chats)); }
+        function getCurrentChat() { return chats.find(c => c.id === currentChatId); }
+        function updateHeader() {
+            const chat = getCurrentChat();
+            chatTitle.textContent = chat ? chat.name : "Select a chat";
+        }
+        function updateSendButton() { sendBtn.disabled = !userMessage.value.trim(); }
+
+        userMessage.addEventListener('input', () => {
+            userMessage.style.height = 'auto';
+            userMessage.style.height = Math.min(userMessage.scrollHeight, window.innerHeight * 0.5) + 'px';
+            updateSendButton();
+        });
+
+        // ---------------- Render Chat List ----------------
+        function renderChatList() {
+            chatListDiv.innerHTML = "";
+            chats.forEach(chat => {
+                const item = document.createElement("div");
+                item.className = "chat-item" + (chat.id === currentChatId ? " active" : "");
+
+                const nameSpan = document.createElement("span");
+                nameSpan.textContent = chat.name;
+                item.appendChild(nameSpan);
+
+                // Buttons container
+                const btnContainer = document.createElement("div");
+                btnContainer.style.display = "flex";
+                btnContainer.style.gap = "6px";
+
+                const btnStyle = `
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: none;
+            background: #3a3a3a;
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+        `;
+
+                // Edit button
+                const editBtn = document.createElement("button");
+                editBtn.style.cssText = btnStyle;
+                editBtn.textContent = "✏️";
+                editBtn.title = "Edit chat name";
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const newName = prompt("Enter new chat name", chat.name);
+                    if (newName) {
+                        chat.name = newName;
+                        saveChats();
+                        renderChatList();
+                        updateHeader();
+                    }
+                };
+                btnContainer.appendChild(editBtn);
+
+                // Delete button
+                const deleteBtn = document.createElement("button");
+                deleteBtn.style.cssText = btnStyle;
+                deleteBtn.textContent = "🗑️";
+                deleteBtn.title = "Delete chat";
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (confirm("Are you sure you want to delete this chat?")) {
+                        chats = chats.filter(c => c.id !== chat.id);
+                        if (currentChatId === chat.id) currentChatId = null;
+                        saveChats();
+                        renderChatList();
+                        renderMessages();
+                        updateHeader();
+                    }
+                };
+                btnContainer.appendChild(deleteBtn);
+
+                item.appendChild(btnContainer);
+
+                item.onclick = () => {
+                    currentChatId = chat.id;
+                    renderChatList();
+                    renderMessages();
+                    updateHeader();
+                };
+
+                chatListDiv.appendChild(item);
+            });
+        }
+
+        // ---------------- Render Messages ----------------
+        function renderMessages() {
+            messagesDiv.innerHTML = "";
+            const chat = getCurrentChat();
+            if (!chat) return; // Do nothing if no chat selected
+            chat.messages.forEach(msg => {
+                addMessage(msg.content, msg.role, !msg.isRead, msg);
+            });
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // ---------------- Add Message ----------------
+        function addMessage(content, type, animate = true, msgObj = null) {
+            const div = document.createElement("div");
+            div.className = "message " + type;
+
+            const lineDiv = document.createElement("div");
+            div.appendChild(lineDiv);
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            // Split content into code blocks and normal text
+            const parts = [];
+            const regex = /```(\w*)\n([\s\S]*?)```/g;
+            let lastIndex = 0;
+            let match;
+            while ((match = regex.exec(content)) !== null) {
+                if (match.index > lastIndex) {
+                    parts.push({ type: "text", content: content.slice(lastIndex, match.index) });
+                }
+                parts.push({ type: "code", language: match[1], content: match[2] });
+                lastIndex = regex.lastIndex;
+            }
+            if (lastIndex < content.length) {
+                parts.push({ type: "text", content: content.slice(lastIndex) });
+            }
+
+            let partIndex = 0;
+            let lineIndex = 0;
+            let lines = [];
+
+            function typeNext() {
+                if (partIndex >= parts.length) {
+                    // Add copy button for the whole message if no code-box
+                    if (!div.querySelector(".code-box")) {
+                        const copyBtn = document.createElement("button");
+                        copyBtn.className = "copy-btn";
+                        copyBtn.textContent = "Copy";
+                        copyBtn.style.position = "static"; // below the content
+                        copyBtn.style.marginTop = "6px";
+                        copyBtn.onclick = () => {
+                            navigator.clipboard.writeText(content).then(() => {
+                                copyBtn.textContent = "Copied!";
+                                setTimeout(() => (copyBtn.textContent = "Copy"), 2000);
+                            });
+                        };
+                        div.appendChild(copyBtn);
+                    }
+
+                    if (msgObj) msgObj.isRead = true;
+                    saveChats();
+                    return;
+                }
+
+                const part = parts[partIndex];
+                if (lineIndex === 0) {
+                    lines = part.content.split("\n");
+                }
+
+                if (lineIndex < lines.length) {
+                    if (part.type === "text") {
+                        const l = document.createElement("div");
+                        l.textContent = lines[lineIndex];
+                        lineDiv.appendChild(l);
+                    } else if (part.type === "code") {
+                        if (lineIndex === 0) {
+                            const codeBox = document.createElement("div");
+                            codeBox.className = "code-box";
+
+                            const pre = document.createElement("pre");
+                            const code = document.createElement("code");
+                            code.textContent = lines.join("\n");
+                            pre.appendChild(code);
+                            codeBox.appendChild(pre);
+
+                            const copyBtn = document.createElement("button");
+                            copyBtn.className = "copy-btn";
+                            copyBtn.textContent = "Copy";
+                            copyBtn.onclick = () => {
+                                navigator.clipboard.writeText(code.textContent).then(() => {
+                                    copyBtn.textContent = "Copied!";
+                                    setTimeout(() => (copyBtn.textContent = "Copy"), 2000);
+                                });
+                            };
+                            codeBox.appendChild(copyBtn);
+
+                            lineDiv.appendChild(codeBox);
+                        }
+                    }
+                    lineIndex++;
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    setTimeout(typeNext, 30);
+                } else {
+                    partIndex++;
+                    lineIndex = 0;
+                    typeNext();
+                }
+            }
+
+            typeNext();
+        }
+
+        // ---------------- Chat Actions ----------------
+async function sendMessage() {
+    const message = userMessage.value.trim();
+    if (!message) return;
+
+    let chat = getCurrentChat();
+
+    // If no chat is selected, create a new one
+    if (!chat) {
+        const id = Date.now() + Math.random();
+        const name = "Chat " + (chats.length + 1);
+        chat = { id, name, messages: [] };
+        chats.unshift(chat);
+        currentChatId = id;
+        saveChats();
+        renderChatList();
+        updateHeader();
+    }
+
+    // Add user message
+    addMessage(message, "user");
+    chat.messages.push({ role: "user", content: message, isRead: true });
+    saveChats();
+    userMessage.value = "";
+    userMessage.style.height = 'auto';
+    updateSendButton();
+
+    // Prepare chat context
+    const chatCtx = chat.messages.map(m => ({ role: m.role, content: m.content }));
+    chatCtx.push({ role: "user", content: message });
+
+    // Send message to API
+    try {
+        const res = await fetch(API_URL, { 
+            method: "POST", 
+            headers: { "Content-Type": "application/json" }, 
+            body: JSON.stringify({ message, history: chatCtx }) 
+        });
+        const data = await res.json();
+        const reply = data.reply || "No response";
+        chat.messages.push({ role: "bot", content: reply, isRead: false });
+        saveChats();
+        addMessage(reply, "bot", true, chat.messages[chat.messages.length - 1]);
+    } catch (err) {
+        addMessage("Network error: " + err.message, "bot");
+    }
+}
+
+        // ---------------- New Chat ----------------
+        function createNewChat() {
+            const id = Date.now() + Math.random();
+            const name = "Chat " + (chats.length + 1);
+            const chat = { id, name, messages: [] };
+            chats.unshift(chat);
+            currentChatId = id;
+            saveChats();
+            renderChatList();
+            renderMessages();
+            updateHeader();
+        }
+
+        // ---------------- Export Current Chat ----------------
+        exportChatBtn.addEventListener("click", () => {
+            const chat = getCurrentChat();
+            if (!chat) return alert("Select a chat first");
+            let txtContent = "";
+            chat.messages.forEach(m => {
+                const role = m.role === "user" ? "User" : "Reply";
+                txtContent += `${role}: ${m.content}\n`;
+            });
+            const blob = new Blob([txtContent], { type: "text/plain" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `${chat.name}.txt`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        });
+
+        // ---------------- Listeners ----------------
+        sendBtn.addEventListener("click", sendMessage);
+        userMessage.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+        newChatBtn.addEventListener("click", createNewChat);
+        document.getElementById("toggleSidebar").addEventListener("click", () => {
+            sidebar.style.width = sidebar.style.width === "0px" ? "260px" : "0px";
+        });
+
+        // ---------------- Init ----------------
+        renderChatList();
+        renderMessages();
+        updateHeader();
+
+    </script>
+</body>
+
+</html>
