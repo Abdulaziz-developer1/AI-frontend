@@ -76,11 +76,6 @@
       font-size: 20px;
     }
 
-    /* .sidebar.collapsed .new-chat-btn::before {
-      content: "+";
-      font-size: 22px;
-    } */
-
     .sidebar.collapsed .new-chat-btn span {
       display: none;
     }
@@ -162,6 +157,24 @@
       align-items: center;
       gap: 12px;
       border-bottom: 1px solid var(--border-color);
+    }
+
+    .chat-header-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-header-actions button {
+      padding: 6px;
+      border-radius: 6px;
+      border: none;
+      background: #3a3a3a;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .messages {
@@ -266,9 +279,11 @@
   <div class="chat-container">
     <div class="chat-header">
       <span id="chatTitle">Select a chat</span>
-      <button id="exportChatBtn"
-        style="margin-left:auto;padding:6px;border-radius:6px;border:none;background:#3a3a3a;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;"
-        title="Export Chat">📤</button>
+      <div class="chat-header-actions">
+        <button id="editChatBtn" title="Edit Chat">✏️</button>
+        <button id="deleteChatBtn" title="Delete Chat">🗑️</button>
+        <button id="exportChatBtn" title="Export Chat">📤</button>
+      </div>
     </div>
     <div class="messages" id="messages"></div>
     <div class="input-area">
@@ -287,6 +302,8 @@
     const chatTitle = document.getElementById("chatTitle");
     const sidebar = document.getElementById("sidebar");
     const exportChatBtn = document.getElementById("exportChatBtn");
+    const editChatBtn = document.getElementById("editChatBtn");
+    const deleteChatBtn = document.getElementById("deleteChatBtn");
 
     let chats = JSON.parse(localStorage.getItem("multiChats")) || [];
     let currentChatId = null;
@@ -310,17 +327,9 @@
       chats.forEach(chat => {
         const item = document.createElement("div");
         item.className = "chat-item" + (chat.id === currentChatId ? " active" : "");
-
         const nameSpan = document.createElement("span");
         nameSpan.textContent = chat.name;
         item.appendChild(nameSpan);
-
-        const btnContainer = document.createElement("div");
-        btnContainer.className = "chat-actions";
-        btnContainer.style.display = "flex";
-        btnContainer.style.gap = "6px";
-
-        item.appendChild(btnContainer);
         item.onclick = () => {
           currentChatId = chat.id;
           renderChatList();
@@ -347,7 +356,6 @@
       div.textContent = content;
       messagesDiv.appendChild(div);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
       if (msgObj) msgObj.isRead = true;
       saveChats();
     }
@@ -355,30 +363,21 @@
     async function sendMessage() {
       const text = userMessage.value.trim();
       if (!text) return;
-
-      // If no chat is selected, auto-create a new one
-      if (!currentChatId) {
-        createNewChat();
-      }
-
+      if (!currentChatId) createNewChat();
       const chat = getCurrentChat();
       if (!chat) return;
-
-      // Push user message
       const userMsg = { role: "user", content: text, isRead: true };
       chat.messages.push(userMsg);
       addMessage(text, "user");
       userMessage.value = "";
       updateSendButton();
       saveChats();
-
       try {
         const response = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: chat.messages }),
         });
-
         const data = await response.json();
         const replyText = data.reply || "⚠️ No reply from backend.";
         const botMsg = { role: "assistant", content: replyText, isRead: true };
@@ -420,6 +419,31 @@
       a.download = `${chat.name}.txt`;
       a.click();
       URL.revokeObjectURL(a.href);
+    });
+
+    editChatBtn.addEventListener("click", () => {
+      const chat = getCurrentChat();
+      if (!chat) return alert("Select a chat first");
+      const newName = prompt("Enter new chat name:", chat.name);
+      if (newName && newName.trim()) {
+        chat.name = newName.trim();
+        saveChats();
+        renderChatList();
+        updateHeader();
+      }
+    });
+
+    deleteChatBtn.addEventListener("click", () => {
+      const chat = getCurrentChat();
+      if (!chat) return alert("Select a chat first");
+      if (confirm(`Delete "${chat.name}"?`)) {
+        chats = chats.filter(c => c.id !== currentChatId);
+        currentChatId = null;
+        saveChats();
+        renderChatList();
+        renderMessages();
+        updateHeader();
+      }
     });
 
     sendBtn.addEventListener("click", sendMessage);
